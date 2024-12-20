@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # Set page config for a wider layout
-st.set_page_config(layout="wide", page_title="Razzle - AI Stock Analysis")
+st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
 
 # Custom CSS for modern styling
 st.markdown("""
