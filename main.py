@@ -48,7 +48,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Title with custom styling
-st.markdown('<h1 class="stTitle">Razzle</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 
 # Create a modern search bar
