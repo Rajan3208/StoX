@@ -392,14 +392,33 @@ try:
         
         elements.append(Paragraph("Key Metrics", styles['Heading2']))
         metrics_data = [
-            ["Metric", "Value"],
-            ["Current Price", f"${info.get('currentPrice', 'N/A')}"],
-            ["Market Cap", f"${(info.get('marketCap', 0) / 1e9):.2f}B"],
-            ["P/E Ratio", f"{info.get('trailingPE', 'N/A'):.2f}"],
-            ["52-Week High", f"${info.get('fiftyTwoWeekHigh', 'N/A')}"],
-            ["52-Week Low", f"${info.get('fiftyTwoWeekLow', 'N/A')}"],
-            ["EPS (TTM)", f"${info.get('trailingEps', 'N/A')}"],
-        ]
+    ["Metric", "Value"],
+    # Stock Information
+    ["Stock Name", info.get('longName', stock)],
+    ["Stock Code", stock],
+    ["Current Price", f"${ticker.info.get('currentPrice', 'N/A')} USD"],
+    ["Previous Close", f"${ticker.info.get('previousClose', 'N/A')} USD"],
+    ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
+    ["52-Week High", f"${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD"],
+    ["52-Week Low", f"${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD"],
+    ["Open Price", f"${ticker.info.get('open', 'N/A')} USD"],
+    ["Day High", f"${ticker.info.get('dayHigh', 'N/A')} USD"],
+    ["Day Low", f"${ticker.info.get('dayLow', 'N/A')} USD"],
+    
+    # Trading Information
+    ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
+    ["Trading Value", f"${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD"],
+    ["Market Cap", f"${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD"],
+    ["Shares Outstanding", f"{(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares"],
+    ["Float Shares", f"{(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares"],
+    
+    # Financial Metrics
+    ["EPS (TTM)", f"${ticker.info.get('trailingEps', 'N/A')}"],
+    ["Forward EPS", f"${ticker.info.get('forwardEps', 'N/A')}"],
+    ["P/E Ratio (TTM)", f"{ticker.info.get('trailingPE', 'N/A'):.2f}"],
+    ["Forward P/E", f"{ticker.info.get('forwardPE', 'N/A'):.2f}"],
+    ["Price-to-Book Ratio", f"{ticker.info.get('priceToBook', 'N/A'):.2f}"]
+]
         
         table = Table(metrics_data)
         table.setStyle(TableStyle([
