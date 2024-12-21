@@ -106,20 +106,29 @@ try:
     with st.expander("Detailed Stock Information"):
         col1, col2 = st.columns(2)
         
-        with col1:
-            st.markdown("### Price Metrics")
-            st.write(f"**Previous Close:** ${info.get('previousClose', 'N/A')}")
-            st.write(f"**52-Week High:** ${info.get('fiftyTwoWeekHigh', 'N/A')}")
-            st.write(f"**52-Week Low:** ${info.get('fiftyTwoWeekLow', 'N/A')}")
-            st.write(f"**Day Range:** ${info.get('dayLow', 'N/A')} - ${info.get('dayHigh', 'N/A')}")
-        
-        with col2:
-            st.markdown("### Company Metrics")
-            st.write(f"**EPS (TTM):** ${info.get('trailingEps', 'N/A')}")
-            st.write(f"**Forward EPS:** ${info.get('forwardEps', 'N/A')}")
-            st.write(f"**Price-to-Book:** {info.get('priceToBook', 'N/A'):.2f}")
-            st.write(f"**Shares Outstanding:** {(info.get('sharesOutstanding', 0) / 1e9):.2f}B")
+    with col1:
+       st.write(f"**Stock Name:** {info.get('longName', stock)}")
+       st.write(f"**Stock Code:** {stock}")
+       st.write(f"**Current Price:** ${ticker.info.get('currentPrice', 'N/A')} USD")
+       st.write(f"**Previous Close:** ${ticker.info.get('previousClose', 'N/A')} USD")
+       st.write(f"**Quote Change:** {((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%")
+       st.write(f"**52-Week High:** ${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD")
+       st.write(f"**52-Week Low:** ${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD")
+       st.write(f"**Open Price:** ${ticker.info.get('open', 'N/A')} USD")
+       st.write(f"**Day High:** ${ticker.info.get('dayHigh', 'N/A')} USD")
+       st.write(f"**Day Low:** ${ticker.info.get('dayLow', 'N/A')} USD")
 
+    with col2:
+       st.write(f"**Trading Volume:** {ticker.info.get('volume', 'N/A'):,} shares")
+       st.write(f"**Trading Value:** ${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD")
+       st.write(f"**Market Cap:** ${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD")
+       st.write(f"**Shares Outstanding:** {(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares")
+       st.write(f"**Float Shares:** {(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares")
+       st.write(f"**EPS (TTM):** ${ticker.info.get('trailingEps', 'N/A')}")
+       st.write(f"**Forward EPS:** ${ticker.info.get('forwardEps', 'N/A')}")
+       st.write(f"**P/E Ratio (TTM):** {ticker.info.get('trailingPE', 'N/A'):.2f}")
+       st.write(f"**Forward P/E:** {ticker.info.get('forwardPE', 'N/A'):.2f}")
+       st.write(f"**Price-to-Book Ratio:** {ticker.info.get('priceToBook', 'N/A'):.2f}")
     # Technical Analysis Section
     st.markdown('<h2 class="stSubheader">Technical Analysis</h2>', unsafe_allow_html=True)
 
