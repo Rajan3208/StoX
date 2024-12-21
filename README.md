@@ -61,7 +61,7 @@ To run tests, execute the testing scripts provided in the repository.
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ## Contact Information
-For any questions or concerns, please contact the maintainers at [email@example.com](mailto:rajan@rajasthan.in).
+For any questions or concerns, please contact the maintainers at [rajan@rajasthan.in](mailto:rajan@rajasthan.in).
 
 ## Acknowledgments
 We would like to thank all the contributors who have helped improve this project.
