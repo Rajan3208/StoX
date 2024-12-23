@@ -72,7 +72,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
-st.markdown('<p style="font-size: 0.8rem; color: #666;">⚠️ Disclaimer: Company currency according to their origin country, means dollar $ for Apple, Rupees ₹ for Zomato </p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size: 0.8rem; color: #666;">⚠️ Disclaimer: Company currency according to their origin country, ( means dollar $ for Apple ), ( Rupees ₹ for Zomato ) </p>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 
 # Company search section
