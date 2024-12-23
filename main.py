@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
@@ -14,11 +13,36 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import requests
 
-# Set page config for a wider layout
-st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
+def search_company(query):
+    """
+    Search for a company and return its ticker symbol using Yahoo Finance API
+    """
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        
+        if 'quotes' in data and len(data['quotes']) > 0:
+            suggestions = []
+            for quote in data['quotes']:
+                if 'symbol' in quote and 'shortname' in quote:
+                    suggestions.append({
+                        'symbol': quote['symbol'],
+                        'name': quote['shortname'],
+                        'exchange': quote.get('exchange', 'N/A')
+                    })
+            return suggestions
+        return []
+    except Exception as e:
+        st.error(f"Error searching for company: {str(e)}")
+        return []
 
-# Custom CSS for modern styling
+# Set page config and styles
+st.set_page_config(layout="wide", page_title="Razzle - AI Stock Analysis")
+
 st.markdown("""
     <style>
     .stApp {
@@ -47,333 +71,248 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Title with custom styling
-st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="stTitle">Razzle</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 
-# Create a modern search bar
+# Company search section
 with st.container():
     col1, col2, col3 = st.columns([2,6,2])
     with col2:
-        stock = st.text_input('Enter Stock Ticker', 'AAPL', 
-                            help='Enter the stock symbol (e.g., AAPL for Apple Inc.)')
-
-# Get stock data
-try:
-    ticker = yf.Ticker(stock)
-    # Initial date range (will be updated based on selected period)
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)
-    start = start_date.strftime('%Y-%m-%d')
-    end = end_date.strftime('%Y-%m-%d')
-    
-    df = ticker.history(start=start, end=end)
-    info = ticker.info
-
-    # Modern metrics layout
-    st.markdown('<h2 class="stSubheader">Key Metrics</h2>', unsafe_allow_html=True)
-    metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
-    
-    with metrics_col1:
-        st.metric(
-            "Current Price",
-            f"${info.get('currentPrice', 'N/A')}",
-            f"{((info.get('currentPrice', 0) - info.get('previousClose', 0)) / info.get('previousClose', 1) * 100):.2f}%"
-        )
-    
-    with metrics_col2:
-        st.metric(
-            "Market Cap",
-            f"${(info.get('marketCap', 0) / 1e9):.2f}B",
-            None
-        )
-    
-    with metrics_col3:
-        st.metric(
-            "P/E Ratio",
-            f"{info.get('trailingPE', 'N/A'):.2f}",
-            None
-        )
-    
-    with metrics_col4:
-        st.metric(
-            "Volume",
-            f"{info.get('volume', 'N/A'):,}",
-            None
+        company_query = st.text_input(
+            'Enter Company Name or Ticker',
+            'Apple',
+            help='Enter the company name (e.g., Apple) or stock symbol (e.g., AAPL)'
         )
 
-    # Detailed information in expandable sections
-    with st.expander("Detailed Stock Information"):
-        col1, col2 = st.columns(2)
-        
-    with col1:
-       st.write(f"**Stock Name:** {info.get('longName', stock)}")
-       st.write(f"**Stock Code:** {stock}")
-       st.write(f"**Current Price:** ${ticker.info.get('currentPrice', 'N/A')} USD")
-       st.write(f"**Previous Close:** ${ticker.info.get('previousClose', 'N/A')} USD")
-       st.write(f"**Quote Change:** {((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%")
-       st.write(f"**52-Week High:** ${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD")
-       st.write(f"**52-Week Low:** ${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD")
-       st.write(f"**Open Price:** ${ticker.info.get('open', 'N/A')} USD")
-       st.write(f"**Day High:** ${ticker.info.get('dayHigh', 'N/A')} USD")
-       st.write(f"**Day Low:** ${ticker.info.get('dayLow', 'N/A')} USD")
+        stock = None
+        if company_query:
+            suggestions = search_company(company_query)
+            
+            if suggestions:
+                options = [f"{s['name']} ({s['symbol']} - {s['exchange']})" for s in suggestions]
+                selected_option = st.selectbox(
+                    'Select Company',
+                    options=options,
+                    index=0,
+                    help='Select the correct company from the list'
+                )
+                
+                stock = selected_option.split('(')[1].split(')')[0].split(' - ')[0].strip()
+            else:
+                st.warning("No companies found. Please try a different search term.")
 
-    with col2:
-       st.write(f"**Trading Volume:** {ticker.info.get('volume', 'N/A'):,} shares")
-       st.write(f"**Trading Value:** ${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD")
-       st.write(f"**Market Cap:** ${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD")
-       st.write(f"**Shares Outstanding:** {(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares")
-       st.write(f"**Float Shares:** {(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares")
-       st.write(f"**EPS (TTM):** ${ticker.info.get('trailingEps', 'N/A')}")
-       st.write(f"**Forward EPS:** ${ticker.info.get('forwardEps', 'N/A')}")
-       st.write(f"**P/E Ratio (TTM):** {ticker.info.get('trailingPE', 'N/A'):.2f}")
-       st.write(f"**Forward P/E:** {ticker.info.get('forwardPE', 'N/A'):.2f}")
-       st.write(f"**Price-to-Book Ratio:** {ticker.info.get('priceToBook', 'N/A'):.2f}")
-    # Technical Analysis Section
-    st.markdown('<h2 class="stSubheader">Technical Analysis</h2>', unsafe_allow_html=True)
-
-    # Add time period selector
-    time_periods = {
-        "1 Day": 1,
-        "1 Month": 30,
-        "6 Months": 180,
-        "1 Year": 365,
-        "10 Years": 3650
-    }
-
-    selected_period = st.selectbox(
-        "Select Time Period",
-        options=list(time_periods.keys()),
-        index=1  # Default to 1 Month (30 days)
-    )
-
-    # Calculate date range based on selected period
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=time_periods[selected_period])
-    period_start = start_date.strftime('%Y-%m-%d')
-    period_end = end_date.strftime('%Y-%m-%d')
-
-    # Get stock data for selected period
-    df_period = ticker.history(start=period_start, end=period_end)
-
-    # Create interactive price chart
-    fig = make_subplots(rows=2, cols=1, 
-                        row_heights=[0.7, 0.3],
-                        vertical_spacing=0.05,
-                        subplot_titles=(f'{selected_period} Price Analysis', 'Volume'))
-
-    # Add candlestick chart
-    fig.add_trace(
-        go.Candlestick(
-            x=df_period.index,
-            open=df_period['Open'],
-            high=df_period['High'],
-            low=df_period['Low'],
-            close=df_period['Close'],
-            name='OHLC'
-        ),
-        row=1, col=1
-    )
-
-    # Add moving averages
-    if time_periods[selected_period] > 100:  # Only show MAs for longer periods
-        fig.add_trace(
-            go.Scatter(
-                x=df_period.index,
-                y=df_period['Close'].rolling(100).mean(),
-                name='100MA',
-                line=dict(color='red', width=1)
-            ),
-            row=1, col=1
-        )
-
-    if time_periods[selected_period] > 200:  # Only show 200MA for periods longer than 200 days
-        fig.add_trace(
-            go.Scatter(
-                x=df_period.index,
-                y=df_period['Close'].rolling(200).mean(),
-                name='200MA',
-                line=dict(color='green', width=1)
-            ),
-            row=1, col=1
-        )
-
-    # Add volume bars
-    fig.add_trace(
-        go.Bar(
-            x=df_period.index,
-            y=df_period['Volume'],
-            name='Volume',
-            marker=dict(color='rgba(0, 0, 255, 0.5)')
-        ),
-        row=2, col=1
-    )
-
-    # Update layout
-    fig.update_layout(
-        title=f'{stock} Stock Analysis - {selected_period}',
-        yaxis_title='Stock Price (USD)',
-        yaxis2_title='Volume',
-        xaxis_rangeslider_visible=False,  # Disable rangeslider for primary chart
-        template='plotly_white',
-        height=800,
-        showlegend=True,
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01
-        )
-    )
-
-    # Update Y-axes labels
-    fig.update_yaxes(title_text="Price (USD)", row=1, col=1)
-    fig.update_yaxes(title_text="Volume", row=2, col=1)
-
-    # Update X-axes
-    fig.update_xaxes(rangeslider_visible=False, row=1, col=1)
-    fig.update_xaxes(rangeslider_visible=True, row=2, col=1)
-
-    # Add buttons for zoom levels
-    fig.update_layout(
-        xaxis=dict(
-            rangeselector=dict(
-                buttons=list([
-                    dict(count=1, label="1D", step="day", stepmode="backward"),
-                    dict(count=7, label="1W", step="day", stepmode="backward"),
-                    dict(count=1, label="1M", step="month", stepmode="backward"),
-                    dict(count=6, label="6M", step="month", stepmode="backward"),
-                    dict(count=1, label="1Y", step="year", stepmode="backward"),
-                    dict(step="all", label="All")
-                ])
-            )
-        )
-    )
-
-    # Show the chart
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Add price statistics for the selected period
-    with st.expander("Price Statistics for Selected Period"):
-        stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
-        
-        with stats_col1:
-            st.metric(
-                "Period High",
-                f"${df_period['High'].max():.2f}",
-                None
-            )
-        
-        with stats_col2:
-            st.metric(
-                "Period Low",
-                f"${df_period['Low'].min():.2f}",
-                None
-            )
-        
-        with stats_col3:
-            period_return = ((df_period['Close'][-1] - df_period['Close'][0]) / df_period['Close'][0] * 100)
-            st.metric(
-                "Period Return",
-                f"{period_return:.2f}%",
-                None
-            )
-        
-        with stats_col4:
-            st.metric(
-                "Average Volume",
-                f"{df_period['Volume'].mean():,.0f}",
-                None
-            )
-
-    # AI Predictions Section
-    st.markdown('<h2 class="stSubheader">AI Price Predictions</h2>', unsafe_allow_html=True)
-    
-    # Add explanation for the prediction graph
-    st.markdown("""
-    **Understanding the Prediction Graph:**
-    - **X-axis (Time)**: Represents the chronological sequence of trading days in the test period
-    - **Y-axis (Price)**: Shows the stock price in USD
-    - **Blue line**: Actual historical stock prices
-    - **Red line**: AI model's predicted prices for the same period
-    
-    The AI model uses the past 100 days of price data to predict each day's price. This helps in 
-    understanding how well the model can capture the stock's price movements.
-    """)
-
-    # Data preprocessing for predictions
-    data_training = pd.DataFrame(df['Close'][0:int(len(df) * 0.70)])
-    data_testing = pd.DataFrame(df['Close'][int(len(df) * 0.70):int(len(df))])
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    data_training_array = scaler.fit_transform(data_training)
-
+if stock:
     try:
-        # Load the model and make predictions
-        model = load_model('my_model.keras')
+        # Initialize ticker and date range
+        ticker = yf.Ticker(stock)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365)
+        df = ticker.history(start=start_date, end=end_date)
         
-        # Prepare test data
-        past_100_days = data_training.tail(100)
-        final_df = pd.concat([past_100_days, data_testing], ignore_index=True)
-        input_data = scaler.transform(final_df)
+        if df.empty:
+            st.error(f"No data available for {stock}")
+        else:
+            info = ticker.info
 
-        x_test = []
-        y_test = []
-        for i in range(100, input_data.shape[0]):
-            x_test.append(input_data[i-100:i])
-            y_test.append(input_data[i, 0])
-
-        x_test, y_test = np.array(x_test), np.array(y_test)
-        y_predicted = model.predict(x_test)
-
-        # Scale back to original range
-        scale_factor = 1 / scaler.scale_[0]
-        y_predicted = y_predicted * scale_factor
-        y_test = y_test * scale_factor
-
-        # Create prediction chart
-        fig_pred = go.Figure()
-        fig_pred.add_trace(go.Scatter(
-            y=y_test,
-            name='Actual Price',
-            line=dict(color='blue')
-        ))
-        fig_pred.add_trace(go.Scatter(
-            y=y_predicted.flatten(),
-            name='Predicted Price',
-            line=dict(color='red')
-        ))
+            # Display metrics only if we have valid data
+            if info:
+                st.markdown('<h2 class="stSubheader">Key Metrics</h2>', unsafe_allow_html=True)
+                metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
+                
+                with metrics_col1:
+                    current_price = info.get('currentPrice')
+                    prev_close = info.get('previousClose')
+                    if current_price and prev_close:
+                        price_change = ((current_price - prev_close) / prev_close * 100)
+                        st.metric("Current Price", f"${current_price:,.2f}", f"{price_change:.2f}%")
+                    else:
+                        st.metric("Current Price", "N/A", "N/A")
+                
+                with metrics_col2:
+                    market_cap = info.get('marketCap')
+                    if market_cap:
+                        st.metric("Market Cap", f"${(market_cap / 1e9):,.2f}B", None)
+                    else:
+                        st.metric("Market Cap", "N/A", None)
+                
+                with metrics_col3:
+                    pe_ratio = info.get('trailingPE')
+                    if pe_ratio:
+                        st.metric("P/E Ratio", f"{pe_ratio:.2f}", None)
+                    else:
+                        st.metric("P/E Ratio", "N/A", None)
+                
+                with metrics_col4:
+                    volume = info.get('volume')
+                    if volume:
+                        st.metric("Volume", f"{volume:,}", None)
+                    else:
+                        st.metric("Volume", "N/A", None)
+            # Detailed information in expandable sections
+                with st.expander("Detailed Stock Information"):
+                   col1, col2 = st.columns(2)
         
-        fig_pred.update_layout(
-            title='AI Price Predictions vs Actual Prices',
-            xaxis_title='Trading Days (Most Recent 30% of 1-Year Data)',
-            yaxis_title='Stock Price (USD)',
-            template='plotly_white',
-            height=400,
-            showlegend=True,
-            legend=dict(
-                yanchor="top",
-                y=0.99,
-                xanchor="left",
-                x=0.01
+                with col1:
+                 st.write(f"**Stock Name:** {info.get('longName', stock)}")
+                 st.write(f"**Stock Code:** {stock}")
+                 st.write(f"**Current Price:** ${ticker.info.get('currentPrice', 'N/A')} USD")
+                 st.write(f"**Previous Close:** ${ticker.info.get('previousClose', 'N/A')} USD")
+                 st.write(f"**Quote Change:** {((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%")
+                 st.write(f"**52-Week High:** ${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD")
+                 st.write(f"**52-Week Low:** ${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD")
+                 st.write(f"**Open Price:** ${ticker.info.get('open', 'N/A')} USD")
+                 st.write(f"**Day High:** ${ticker.info.get('dayHigh', 'N/A')} USD")
+                 st.write(f"**Day Low:** ${ticker.info.get('dayLow', 'N/A')} USD")
+
+                with col2:
+                 st.write(f"**Trading Volume:** {ticker.info.get('volume', 'N/A'):,} shares")
+                 st.write(f"**Trading Value:** ${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD")
+                 st.write(f"**Market Cap:** ${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD")
+                 st.write(f"**Shares Outstanding:** {(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares")
+                 st.write(f"**Float Shares:** {(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares")
+                 st.write(f"**EPS (TTM):** ${ticker.info.get('trailingEps', 'N/A')}")
+                 st.write(f"**Forward EPS:** ${ticker.info.get('forwardEps', 'N/A')}")
+                 st.write(f"**P/E Ratio (TTM):** {ticker.info.get('trailingPE', 'N/A'):.2f}")
+                 st.write(f"**Forward P/E:** {ticker.info.get('forwardPE', 'N/A'):.2f}")
+                 st.write(f"**Price-to-Book Ratio:** {ticker.info.get('priceToBook', 'N/A'):.2f}")            
+
+            # Technical Analysis Section
+            st.markdown('<h2 class="stSubheader">Technical Analysis</h2>', unsafe_allow_html=True)
+
+            # Time period selector
+            time_periods = {
+                "1 Month": 30,
+                "6 Months": 180,
+                "1 Year": 365,
+            }
+
+            selected_period = st.selectbox(
+                "Select Time Period",
+                options=list(time_periods.keys()),
+                index=0
             )
-        )
-        
-        # Add range slider
-        fig_pred.update_xaxes(rangeslider_visible=True)
-        
-        st.plotly_chart(fig_pred, use_container_width=True)
 
-        # Show prediction performance metrics
-        mse = np.mean((y_test - y_predicted.flatten()) ** 2)
-        rmse = np.sqrt(mse)
-        st.markdown("### Prediction Performance Metrics")
-        st.write(f"Root Mean Square Error (RMSE): ${rmse:.2f}")
+            period_days = time_periods[selected_period]
+            period_start = end_date - timedelta(days=period_days)
+            df_period = ticker.history(start=period_start, end=end_date)
+
+            if not df_period.empty:
+                # Create interactive price chart
+                fig = make_subplots(
+                    rows=2, cols=1,
+                    row_heights=[0.7, 0.3],
+                    vertical_spacing=0.05,
+                    subplot_titles=(f'{selected_period} Price Analysis', 'Volume')
+                )
+
+                # Add candlestick chart
+                fig.add_trace(
+                    go.Candlestick(
+                        x=df_period.index,
+                        open=df_period['Open'],
+                        high=df_period['High'],
+                        low=df_period['Low'],
+                        close=df_period['Close'],
+                        name='OHLC'
+                    ),
+                    row=1, col=1
+                )
+
+                # Add moving averages for longer periods
+                if period_days >= 100:
+                    ma100 = df_period['Close'].rolling(window=100).mean()
+                    fig.add_trace(
+                        go.Scatter(
+                            x=df_period.index,
+                            y=ma100,
+                            name='100MA',
+                            line=dict(color='red', width=1)
+                        ),
+                        row=1, col=1
+                    )
+
+                # Add volume bars
+                fig.add_trace(
+                    go.Bar(
+                        x=df_period.index,
+                        y=df_period['Volume'],
+                        name='Volume',
+                        marker=dict(color='rgba(0, 0, 255, 0.5)')
+                    ),
+                    row=2, col=1
+                )
+
+                # Update layout
+                fig.update_layout(
+                    title=f'{stock} Stock Analysis - {selected_period}',
+                    yaxis_title='Stock Price (USD)',
+                    yaxis2_title='Volume',
+                    xaxis_rangeslider_visible=False,
+                    template='plotly_white',
+                    height=800,
+                    showlegend=True
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+                # AI Predictions Section
+                if len(df) >= 100:  # Only show predictions if we have enough data
+                    st.markdown('<h2 class="stSubheader">AI Price Predictions</h2>', unsafe_allow_html=True)
+                    
+                    try:
+                        # Prepare data for predictions
+                        scaler = MinMaxScaler(feature_range=(0, 1))
+                        scaled_data = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
+                        
+                        # Create sequences for prediction
+                        x_test = []
+                        for i in range(100, len(scaled_data)):
+                            x_test.append(scaled_data[i-100:i, 0])
+                        x_test = np.array(x_test)
+                        
+                        # Load model and make predictions
+                        try:
+                            model = load_model('my_model.keras')
+                            predictions = model.predict(x_test)
+                            predictions = scaler.inverse_transform(predictions)
+                            
+                            # Create prediction chart
+                            fig_pred = go.Figure()
+                            fig_pred.add_trace(go.Scatter(
+                                x=df.index[100:],
+                                y=df['Close'].values[100:],
+                                name='Actual Price',
+                                line=dict(color='blue')
+                            ))
+                            fig_pred.add_trace(go.Scatter(
+                                x=df.index[100:],
+                                y=predictions.flatten(),
+                                name='Predicted Price',
+                                line=dict(color='red')
+                            ))
+                            
+                            fig_pred.update_layout(
+                                title='AI Price Predictions vs Actual Prices',
+                                xaxis_title='Date',
+                                yaxis_title='Stock Price (USD)',
+                                template='plotly_white',
+                                height=400
+                            )
+                            
+                            st.plotly_chart(fig_pred, use_container_width=True)
+                            
+                        except FileNotFoundError:
+                            st.warning("AI model file not found. Predictions are currently unavailable.")
+                            
+                    except Exception as e:
+                        st.error(f"Error in AI predictions: {str(e)}")
 
     except Exception as e:
-        st.error("Error loading the AI model or making predictions.")
+        st.error(f"Error processing data for {stock}: {str(e)}")
 
 
     # PDF Export Function
+        # PDF Export Function
     def create_stock_report_pdf():
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -451,6 +390,3 @@ try:
         key='download_button',
         help="Download a detailed PDF report of the stock analysis"
     )
-
-except Exception as e:
-    st.error(f"Error fetching data for {stock}. Please check the ticker symbol and try again.")
