@@ -294,7 +294,7 @@ if stock:
                             fig_pred.update_layout(
                                 title='AI Price Predictions vs Actual Prices',
                                 xaxis_title='Date',
-                                yaxis_title='Stock Price (USD)',
+                                yaxis_title='Stock Price ',
                                 template='plotly_white',
                                 height=400
                             )
@@ -335,18 +335,18 @@ if stock:
     # Stock Information
     ["Stock Name", info.get('longName', stock)],
     ["Stock Code", stock],
-    ["Current Price", f"{ticker.info.get('currentPrice', 'N/A')} USD"],
-    ["Previous Close", f"{ticker.info.get('previousClose', 'N/A')} USD"],
+    ["Current Price", f"{ticker.info.get('currentPrice', 'N/A')} "],
+    ["Previous Close", f"{ticker.info.get('previousClose', 'N/A')} "],
     ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
-    ["52-Week High", f"{ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD"],
-    ["52-Week Low", f"{ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD"],
-    ["Open Price", f"{ticker.info.get('open', 'N/A')} USD"],
-    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} USD"],
-    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} USD"],
+    ["52-Week High", f"{ticker.info.get('fiftyTwoWeekHigh', 'N/A')} "],
+    ["52-Week Low", f"{ticker.info.get('fiftyTwoWeekLow', 'N/A')} "],
+    ["Open Price", f"{ticker.info.get('open', 'N/A')} "],
+    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} "],
+    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} "],
     
     # Trading Information
     ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
-    ["Trading Value", f"{(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD"],
+    ["Trading Value", f"{(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion "],
     ["Market Cap", f"{(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD"],
     ["Shares Outstanding", f"{(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares"],
     ["Float Shares", f"{(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares"],
