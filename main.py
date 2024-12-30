@@ -53,7 +53,7 @@ st.markdown("""
     }
     .stTitle {
         font-size: 3rem !important;
-        font-weight: 700 !important;
+        font-weight: 701 !important;
         color: #1e3d59 !important;
         margin-bottom: 2rem !important;
     }
