@@ -16,17 +16,28 @@ from plotly.subplots import make_subplots
 import requests
 import json
 
+import requests
+import streamlit as st
+import json
+
 def search_company(query):
     """
-    Search for a company and return its ticker symbol using Yahoo Finance API
+    Search for a company using Yahoo Finance API
     """
     try:
-        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        url = f"https://query1.finance.yahoo.com/v1/finance/search"
+        params = {
+            'q': query,
+            'quotesCount': 10,
+            'newsCount': 0,
+            'enableFuzzyQuery': False
         }
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raise error for bad status codes
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
         
         try:
             data = response.json()
@@ -35,15 +46,11 @@ def search_company(query):
             return []
             
         if 'quotes' in data and len(data['quotes']) > 0:
-            suggestions = []
-            for quote in data['quotes']:
-                if 'symbol' in quote and 'shortname' in quote:
-                    suggestions.append({
-                        'symbol': quote['symbol'],
-                        'name': quote['shortname'],
-                        'exchange': quote.get('exchange', 'N/A')
-                    })
-            return suggestions
+            return [{
+                'symbol': quote['symbol'],
+                'name': quote['shortname'],
+                'exchange': quote.get('exchange', 'N/A')
+            } for quote in data['quotes'] if 'symbol' in quote and 'shortname' in quote]
             
         st.warning("No companies found. Please try a different search term.")
         return []
