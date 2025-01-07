@@ -15,17 +15,28 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import requests
 import json
-
 def search_company(query):
     """
-    Search for a company and return its ticker symbol using Yahoo Finance API
+    Search for a company and return its ticker symbol using Yahoo Finance API.
     """
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
-        data = response.json()
 
+        # Check if the response is valid
+        if response.status_code != 200:
+            st.error(f"Error: Received status code {response.status_code} from Yahoo Finance API.")
+            return []
+
+        # Check if the response contains JSON
+        try:
+            data = response.json()
+        except ValueError:
+            st.error("Error: Response is not in JSON format.")
+            return []
+
+        # Check for quotes in the response data
         if 'quotes' in data and len(data['quotes']) > 0:
             suggestions = []
             for quote in data['quotes']:
@@ -36,12 +47,14 @@ def search_company(query):
                         'exchange': quote.get('exchange', 'N/A')
                     })
             return suggestions
+
+        # No companies found
         return []
     except Exception as e:
         st.error(f"Error searching for company: {str(e)}")
         return []
 
-# Set page config and styles
+# Streamlit UI
 st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
 
 st.markdown("""
@@ -102,6 +115,7 @@ with st.container():
                 stock = selected_option.split('(')[1].split(')')[0].split(' - ')[0].strip()
             else:
                 st.warning("No companies found. Please try a different search term.")
+
 
 if stock:
     try:
