@@ -15,44 +15,73 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import requests
 import json
-def search_company(query):
+import requests
+import streamlit as st
+import yfinance as yf
+
+def search_company_yahoo(query):
     """
-    Search for a company and return its ticker symbol using Yahoo Finance API.
+    Search for a company using Yahoo Finance API (Primary Method).
     """
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
 
-        # Check if the response is valid
-        if response.status_code != 200:
+        # Debugging: Log full response
+        st.write("Response URL:", response.url)
+        st.write("Response Status Code:", response.status_code)
+        st.write("Response Text:", response.text)
+
+        if response.status_code == 200:
+            try:
+                data = response.json()
+            except ValueError:
+                st.error("Error: Response is not in JSON format.")
+                return []
+            if 'quotes' in data and len(data['quotes']) > 0:
+                suggestions = []
+                for quote in data['quotes']:
+                    if 'symbol' in quote and 'shortname' in quote:
+                        suggestions.append({
+                            'symbol': quote['symbol'],
+                            'name': quote['shortname'],
+                            'exchange': quote.get('exchange', 'N/A')
+                        })
+                return suggestions
+        elif response.status_code == 404:
+            st.error("Error: Yahoo Finance API returned a 404 status. The endpoint may no longer be valid.")
+        else:
             st.error(f"Error: Received status code {response.status_code} from Yahoo Finance API.")
-            return []
-
-        # Check if the response contains JSON
-        try:
-            data = response.json()
-        except ValueError:
-            st.error("Error: Response is not in JSON format.")
-            return []
-
-        # Check for quotes in the response data
-        if 'quotes' in data and len(data['quotes']) > 0:
-            suggestions = []
-            for quote in data['quotes']:
-                if 'symbol' in quote and 'shortname' in quote:
-                    suggestions.append({
-                        'symbol': quote['symbol'],
-                        'name': quote['shortname'],
-                        'exchange': quote.get('exchange', 'N/A')
-                    })
-            return suggestions
-
-        # No companies found
         return []
     except Exception as e:
         st.error(f"Error searching for company: {str(e)}")
         return []
+
+def search_company_yfinance(query):
+    """
+    Search for a company using yfinance (Fallback Method).
+    """
+    try:
+        ticker = yf.Ticker(query)
+        info = ticker.info
+        return [{
+            'symbol': query,
+            'name': info.get('longName', 'Unknown Company'),
+            'exchange': info.get('exchange', 'N/A')
+        }]
+    except Exception as e:
+        st.error(f"Error searching for company with yfinance: {str(e)}")
+        return []
+
+def search_company(query):
+    """
+    Search for a company using Yahoo Finance API or fallback to yfinance.
+    """
+    results = search_company_yahoo(query)
+    if not results:  # Fallback to yfinance if Yahoo Finance API fails
+        results = search_company_yfinance(query)
+    return results
 
 # Streamlit UI
 st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
@@ -91,7 +120,7 @@ st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis 
 
 # Company search section
 with st.container():
-    col1, col2, col3 = st.columns([2,6,2])
+    col1, col2, col3 = st.columns([2, 6, 2])
     with col2:
         company_query = st.text_input(
             'Enter Company Name or Ticker',
@@ -115,6 +144,7 @@ with st.container():
                 stock = selected_option.split('(')[1].split(')')[0].split(' - ')[0].strip()
             else:
                 st.warning("No companies found. Please try a different search term.")
+
 
 
 if stock:
