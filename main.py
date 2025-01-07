@@ -22,19 +22,12 @@ import json
 
 def search_company(query):
     """
-    Search for a company using Yahoo Finance API
+    Search for companies using Yahoo Finance autocomplete API
     """
     try:
-        url = f"https://query1.finance.yahoo.com/v1/finance/search"
-        params = {
-            'q': query,
-            'quotesCount': 10,
-            'newsCount': 0,
-            'enableFuzzyQuery': False
-        }
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        url = "https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist"
+        params = {'query': query}
+        headers = {'User-Agent': 'Mozilla/5.0'}
         
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
@@ -45,12 +38,12 @@ def search_company(query):
             st.error("Invalid response format from Yahoo Finance")
             return []
             
-        if 'quotes' in data and len(data['quotes']) > 0:
+        if 'items' in data and data['items']:
             return [{
-                'symbol': quote['symbol'],
-                'name': quote['shortname'],
-                'exchange': quote.get('exchange', 'N/A')
-            } for quote in data['quotes'] if 'symbol' in quote and 'shortname' in quote]
+                'symbol': item['symbol'],
+                'name': item['name'],
+                'exchange': item.get('exch', 'N/A')
+            } for item in data['items']]
             
         st.warning("No companies found. Please try a different search term.")
         return []
