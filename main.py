@@ -16,43 +16,29 @@ from plotly.subplots import make_subplots
 import requests
 import json
 
-import requests
-import streamlit as st
-import json
-
 def search_company(query):
     """
-    Search for companies using Yahoo Finance autocomplete API
+    Search for a company and return its ticker symbol using Yahoo Finance API
     """
     try:
-        url = "https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist"
-        params = {'query': query}
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
         headers = {'User-Agent': 'Mozilla/5.0'}
-        
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        
-        try:
-            data = response.json()
-        except json.JSONDecodeError:
-            st.error("Invalid response format from Yahoo Finance")
-            return []
-            
-        if 'items' in data and data['items']:
-            return [{
-                'symbol': item['symbol'],
-                'name': item['name'],
-                'exchange': item.get('exch', 'N/A')
-            } for item in data['items']]
-            
-        st.warning("No companies found. Please try a different search term.")
-        return []
-        
-    except requests.RequestException as e:
-        st.error(f"Network error: {str(e)}")
+        response = requests.get(url, headers=headers)
+        data = response.json()
+
+        if 'quotes' in data and len(data['quotes']) > 0:
+            suggestions = []
+            for quote in data['quotes']:
+                if 'symbol' in quote and 'shortname' in quote:
+                    suggestions.append({
+                        'symbol': quote['symbol'],
+                        'name': quote['shortname'],
+                        'exchange': quote.get('exchange', 'N/A')
+                    })
+            return suggestions
         return []
     except Exception as e:
-        st.error(f"Unexpected error: {str(e)}")
+        st.error(f"Error searching for company: {str(e)}")
         return []
 
 # Set page config and styles
