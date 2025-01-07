@@ -22,10 +22,18 @@ def search_company(query):
     """
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
         response = requests.get(url, headers=headers)
-        data = response.json()
+        response.raise_for_status()  # Raise error for bad status codes
         
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            st.error("Invalid response format from Yahoo Finance")
+            return []
+            
         if 'quotes' in data and len(data['quotes']) > 0:
             suggestions = []
             for quote in data['quotes']:
@@ -36,9 +44,15 @@ def search_company(query):
                         'exchange': quote.get('exchange', 'N/A')
                     })
             return suggestions
+            
+        st.warning("No companies found. Please try a different search term.")
+        return []
+        
+    except requests.RequestException as e:
+        st.error(f"Network error: {str(e)}")
         return []
     except Exception as e:
-        st.error(f"Error searching for company: {str(e)}")
+        st.error(f"Unexpected error: {str(e)}")
         return []
 
 # Set page config and styles
