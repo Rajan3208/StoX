@@ -312,10 +312,8 @@ if stock:
 
     except Exception as e:
         st.error(f"Error processing data for {stock}: {str(e)}")
-
-
+        
     # PDF Export Function
-        # PDF Export Function
     def create_stock_report_pdf():
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -382,7 +380,7 @@ if stock:
         buffer.seek(0)
         return buffer
 
-    # Add download button
+    # Download button
     st.markdown('<h2 class="stSubheader">Export Report</h2>', unsafe_allow_html=True)
     pdf_buffer = create_stock_report_pdf()
     st.download_button(
