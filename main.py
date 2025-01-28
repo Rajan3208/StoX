@@ -42,7 +42,7 @@ def search_company(query):
         return []
 
 # Set page config and styles
-st.set_page_config(layout="wide", page_title="Razzle - AI Stock Analysis")
+st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
 
 st.markdown("""
     <style>
@@ -72,7 +72,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 class="stTitle">Razzle</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 
 # Company search section
