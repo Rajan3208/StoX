@@ -395,6 +395,7 @@ if stock:
 # Detailed Information Section of Company
 st.title("📈 Detailed Information of Company")
 navigation = st.tabs(["Stock News", "About", "Contact"])
+#news section start here
 with navigation[0]:
     st.subheader("Search Stock News")
     if stock and info:
@@ -422,7 +423,7 @@ with navigation[0]:
             return []
 
     if st.button("Search News"):
-        st.subheader(f"Latest News for '{query}'")
+        st.subheader(f"Top 10 buzzing News for '{query}'")
         articles = fetch_stock_news(query, API_KEY)
         
         if articles:
