@@ -391,3 +391,116 @@ if stock:
         key='download_button',
         help="Download a detailed PDF report of the stock analysis"
     )
+    
+# Detailed Information Section of Company
+st.title("📈 Detailed Information of Company")
+navigation = st.tabs(["Stock News", "About", "Contact"])
+with navigation[0]:
+    st.subheader("Search Stock News")
+    if stock and info:
+        company_name = info.get('longName', stock)
+        query = company_name  
+    else:
+        query = "Apple"  
+    query = st.text_input("Enter stock/company name:", value=query)
+    API_KEY = "84f6a80ac55c464c930ce84304485380" 
+    NEWS_API_URL = "https://newsapi.org/v2/everything"
+    def fetch_stock_news(query, api_key):
+        """Fetch stock-related news from NewsAPI."""
+        params = {
+            "q": query,
+            "sortBy": "publishedAt",
+            "apiKey": api_key,
+            "language": "en",
+            "pageSize": 10,
+        }
+        response = requests.get(NEWS_API_URL, params=params)
+        if response.status_code == 200:
+            return response.json().get("articles", [])
+        else:
+            st.error(f"Error fetching news: {response.status_code}")
+            return []
+
+    if st.button("Search News"):
+        st.subheader(f"Latest News for '{query}'")
+        articles = fetch_stock_news(query, API_KEY)
+        
+        if articles:
+            for article in articles:
+                st.write("### " + article["title"])
+                st.write(f"**Source:** {article['source']['name']}")
+                st.write(f"**Published:** {article['publishedAt']}")
+                st.write(article["description"])
+                st.markdown(f"[Read more]({article['url']})", unsafe_allow_html=True)
+                st.write("---")
+        else:
+            st.warning(f"No news found for '{query}'.")
+
+# About Section
+with navigation[1]:
+    if stock and info:
+        st.subheader(f"About {info.get('longName', stock)}")
+        
+        # Company Description
+        if info.get('longBusinessSummary'):
+            st.write("### Business Summary")
+            st.write(info['longBusinessSummary'])
+        
+        # Key Company Information
+        st.write("### Company Details")
+        company_details = {
+            "Industry": info.get('industry', 'N/A'),
+            "Sector": info.get('sector', 'N/A'),
+            "Full Time Employees": f"{info.get('fullTimeEmployees', 'N/A'):,}" if info.get('fullTimeEmployees') else 'N/A',
+            "Country": info.get('country', 'N/A'),
+            "State": info.get('state', 'N/A'),
+            "City": info.get('city', 'N/A'),
+        }    
+        # Display company details in two columns
+        col1, col2 = st.columns(2)
+        for i, (key, value) in enumerate(company_details.items()):
+            if i % 2 == 0:
+                col1.write(f"**{key}:** {value}")
+            else:
+                col2.write(f"**{key}:** {value}")
+        # Financial Information
+        st.write("### Financial Overview")
+        financial_metrics = {
+            "Revenue Growth": f"{info.get('revenueGrowth', 'N/A')*100:.2f}%" if info.get('revenueGrowth') else 'N/A',
+            "Gross Margins": f"{info.get('grossMargins', 'N/A')*100:.2f}%" if info.get('grossMargins') else 'N/A',
+            "Operating Margins": f"{info.get('operatingMargins', 'N/A')*100:.2f}%" if info.get('operatingMargins') else 'N/A',
+            "Profit Margins": f"{info.get('profitMargins', 'N/A')*100:.2f}%" if info.get('profitMargins') else 'N/A',
+        }
+        # Display financial metrics in two columns
+        col1, col2 = st.columns(2)
+        for i, (key, value) in enumerate(financial_metrics.items()):
+            if i % 2 == 0:
+                col1.write(f"**{key}:** {value}")
+            else:
+                col2.write(f"**{key}:** {value}")
+    else:
+        st.info("Please select a company to view detailed information.")
+# Contact Section
+with navigation[2]:
+    if stock and info:
+        st.subheader(f"Contact Information for {info.get('longName', stock)}")
+        contact_info = {
+            "Website": info.get('website', 'N/A'),
+            "Phone": info.get('phone', 'N/A'),
+            "Address": f"{info.get('address1', '')}, {info.get('city', '')}, {info.get('state', '')}, {info.get('country', '')}"
+        }
+        for key, value in contact_info.items():
+            if value and value != 'N/A':
+                if key == "Website" and value != 'N/A':
+                    st.markdown(f"**{key}:** [{value}]({value})")
+                else:
+                    st.write(f"**{key}:** {value}")
+    else:
+        st.info("Please select a company to view contact information.")
+# Footer
+st.markdown(
+    """
+    ---
+    **Disclaimer:** The information provided on this website is for informational purposes only and should not be considered as financial advice.
+    """
+)
