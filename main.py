@@ -142,8 +142,8 @@ if stock:
                         st.write(f"Day Low: {ticker.info.get('dayLow', 'N/A')} ")
                     with col2:
                         st.write(f"Trading Volume: {ticker.info.get('volume', 'N/A'):,} shares")
-                        st.write(f"Trading Value: {(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD")
-                        st.write(f"Market Cap: {(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD")
+                        st.write(f"Trading Value: {(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion ")
+                        st.write(f"Market Cap: {(ticker.info.get('marketCap', 0) / 1e9):.2f} billion ")
                         st.write(f"Shares Outstanding: {(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares")
                         st.write(f"Float Shares: {(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares")
                         st.write(f"EPS (TTM): {ticker.info.get('trailingEps', 'N/A')}")
@@ -336,9 +336,9 @@ if stock:
                         st.write("### Prediction Insights")
                         col1, col2, col3 = st.columns(3)
                         with col1:
-                            st.metric("Current Price", f"${current_price:.2f}")
+                            st.metric("Current Price", f"{current_price:.2f}")
                         with col2:
-                            st.metric("Predicted Price (6m)", f"${final_pred_price:.2f}")
+                            st.metric("Predicted Price (6m)", f"{final_pred_price:.2f}")
                         with col3:
                             st.metric("Expected Change", f"{price_change:.1f}%") 
                         st.info("Note: Predictions include confidence intervals based on historical volatility. The shaded area represents the potential price range with 68% confidence.")    
@@ -368,14 +368,14 @@ if stock:
                     ["Current Price", f"{ticker.info.get('currentPrice', 'N/A')}"],
                     ["Previous Close", f"{ticker.info.get('previousClose', 'N/A')}"],
                     ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
-                    ["52-Week High", f"{ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD"],
-                    ["52-Week Low", f"{ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD"],
-                    ["Open Price", f"{ticker.info.get('open', 'N/A')} USD"],
-                    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} USD"],
-                    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} USD"],
+                    ["52-Week High", f"{ticker.info.get('fiftyTwoWeekHigh', 'N/A')} "],
+                    ["52-Week Low", f"{ticker.info.get('fiftyTwoWeekLow', 'N/A')} "],
+                    ["Open Price", f"{ticker.info.get('open', 'N/A')} "],
+                    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} "],
+                    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} "],
                     ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
-                    ["Trading Value", f"{(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD"],
-                    ["Market Cap", f"{(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD"],
+                    ["Trading Value", f"{(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion "],
+                    ["Market Cap", f"{(ticker.info.get('marketCap', 0) / 1e9):.2f} billion "],
                     ["Shares Outstanding", f"{(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares"],
                     ["Float Shares", f"{(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares"],
                     ["EPS (TTM)", f"{ticker.info.get('trailingEps', 'N/A')}"],
