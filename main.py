@@ -271,71 +271,90 @@ if stock:
                     for i in range(100, len(scaled_data)):
                         x_test.append(scaled_data[i-100:i, 0])
                     x_test = np.array(x_test)
+                    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
                     
                     try:
                         model = load_model('my_model.keras')
                         
-                        # Predict future prices with volatility
+                        # Section 1: Current Predictions vs Actual
+                        predictions = model.predict(x_test)
+                        predictions = scaler.inverse_transform(predictions)
+                        
+                        fig_pred = go.Figure()
+                        fig_pred.add_trace(go.Scatter(
+                            x=df.index[100:],
+                            y=df['Close'].values[100:],
+                            name='Actual Price',
+                            line=dict(color='blue')
+                        ))
+                        fig_pred.add_trace(go.Scatter(
+                            x=df.index[100:],
+                            y=predictions.flatten(),
+                            name='Predicted Price',
+                            line=dict(color='red')
+                        ))
+                        
+                        fig_pred.update_layout(
+                            title='AI Price Predictions vs Actual Prices',
+                            xaxis_title='Date',
+                            yaxis_title='Stock Price',
+                            template='plotly_white',
+                            height=400
+                        )
+                        
+                        st.plotly_chart(fig_pred, use_container_width=True)
+                        
+                        # Section 2: Future Predictions with Volatility
                         future_predictions = []
-                        last_sequence = scaled_data[-100:]  # Last 100 days of data
+                        last_sequence = scaled_data[-100:].reshape(1, 100, 1)
                         current_price = df['Close'].iloc[-1]
                         
                         # Calculate historical volatility
                         historical_returns = np.log(df['Close'] / df['Close'].shift(1))
-                        volatility = historical_returns.std() * np.sqrt(252)  # Annualized volatility
+                        volatility = historical_returns.std() * np.sqrt(252)
                         
                         # Generate predictions with realistic fluctuations
-                        for i in range(180):  # Predict 180 days into the future
-                            # Get base prediction
-                            base_pred = model.predict(last_sequence.reshape(1, 100, 1))
-                            
-                            # Add random walk component based on historical volatility
+                        for i in range(180):
+                            base_pred = model.predict(last_sequence)
                             random_walk = np.random.normal(0, volatility/np.sqrt(252))
                             
-                            # Combine prediction with random walk
                             if i > 0:
                                 adjusted_pred = future_predictions[-1] * (1 + random_walk)
                             else:
                                 adjusted_pred = current_price * (1 + random_walk)
                             
-                            # Ensure prediction doesn't deviate too far from trend
-                            weight = 0.7  # Weight for base prediction vs random walk
-                            final_pred = weight * base_pred[0, 0] + (1 - weight) * (adjusted_pred / current_price)
-                            
+                            weight = 0.7
+                            final_pred = weight * scaler.inverse_transform([[base_pred[0, 0]]])[0, 0] + (1 - weight) * adjusted_pred
                             future_predictions.append(final_pred)
                             
-                            # Update sequence for next prediction
-                            last_sequence = np.append(last_sequence[1:], final_pred)
+                            new_point = scaler.transform([[final_pred]])[0, 0]
+                            last_sequence = np.roll(last_sequence, -1, axis=1)
+                            last_sequence[0, -1, 0] = new_point
                         
-                        # Convert predictions back to price scale
-                        future_predictions = np.array(future_predictions).reshape(-1, 1)
-                        future_predictions = scaler.inverse_transform(future_predictions)
+                        future_predictions = np.array(future_predictions)
                         
-                        # Create prediction chart
-                        fig_pred = go.Figure()
+                        # Create future prediction chart
+                        fig_future = go.Figure()
                         
-                        # Add actual price trace
-                        fig_pred.add_trace(go.Scatter(
-                            x=df.index[-180:],  # Show last 180 days of actual data
+                        fig_future.add_trace(go.Scatter(
+                            x=df.index[-180:],
                             y=df['Close'].values[-180:],
                             name='Actual Price',
                             line=dict(color='blue', width=2)
                         ))
                         
-                        # Add future predictions to the chart
                         future_dates = pd.date_range(start=df.index[-1], periods=181, freq='B')[1:]
-                        fig_pred.add_trace(go.Scatter(
+                        fig_future.add_trace(go.Scatter(
                             x=future_dates,
-                            y=future_predictions.flatten(),
+                            y=future_predictions,
                             name='Predicted Price (Next 6 Months)',
                             line=dict(color='red', width=2, dash='dash')
                         ))
                         
-                        # Add confidence intervals
-                        upper_bound = future_predictions.flatten() * (1 + volatility)
-                        lower_bound = future_predictions.flatten() * (1 - volatility)
+                        upper_bound = future_predictions * (1 + volatility)
+                        lower_bound = future_predictions * (1 - volatility)
                         
-                        fig_pred.add_trace(go.Scatter(
+                        fig_future.add_trace(go.Scatter(
                             x=future_dates,
                             y=upper_bound,
                             fill=None,
@@ -344,7 +363,7 @@ if stock:
                             showlegend=False
                         ))
                         
-                        fig_pred.add_trace(go.Scatter(
+                        fig_future.add_trace(go.Scatter(
                             x=future_dates,
                             y=lower_bound,
                             fill='tonexty',
@@ -354,8 +373,7 @@ if stock:
                             fillcolor='rgba(255,0,0,0.1)'
                         ))
                         
-                        # Update layout
-                        fig_pred.update_layout(
+                        fig_future.update_layout(
                             title='AI Price Predictions with Confidence Intervals',
                             xaxis_title='Date',
                             yaxis_title='Stock Price (USD)',
@@ -370,11 +388,10 @@ if stock:
                             )
                         )
                         
-                        st.plotly_chart(fig_pred, use_container_width=True)
+                        st.plotly_chart(fig_future, use_container_width=True)
                         
                         # Add prediction insights
-                        current_price = df['Close'].iloc[-1]
-                        final_pred_price = future_predictions[-1][0]
+                        final_pred_price = future_predictions[-1]
                         price_change = ((final_pred_price - current_price) / current_price) * 100
                         
                         st.write("### Prediction Insights")
@@ -393,50 +410,78 @@ if stock:
                     
                 except Exception as e:
                     st.error(f"Error processing data for predictions: {str(e)}")
+            # PDF Export Function
+            def create_stock_report_pdf():
+                buffer = io.BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=letter)
+                elements = []
+                
+                styles = getSampleStyleSheet()
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=styles['Heading1'],
+                    fontSize=24,
+                    spaceAfter=30
+                )
+                elements.append(Paragraph(f"Stock Analysis Report - {stock}", title_style))
+                elements.append(Spacer(1, 12))
+                
+                elements.append(Paragraph("Key Metrics", styles['Heading2']))
+                metrics_data = [
+                    ["Metric", "Value"],
+                    ["Stock Name", info.get('longName', stock)],
+                    ["Stock Code", stock],
+                    ["Current Price", f"${ticker.info.get('currentPrice', 'N/A')} USD"],
+                    ["Previous Close", f"${ticker.info.get('previousClose', 'N/A')} USD"],
+                    ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
+                    ["52-Week High", f"${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD"],
+                    ["52-Week Low", f"${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD"],
+                    ["Open Price", f"${ticker.info.get('open', 'N/A')} USD"],
+                    ["Day High", f"${ticker.info.get('dayHigh', 'N/A')} USD"],
+                    ["Day Low", f"${ticker.info.get('dayLow', 'N/A')} USD"],
+                    ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
+                    ["Trading Value", f"${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD"],
+                    ["Market Cap", f"${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD"],
+                    ["Shares Outstanding", f"{(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares"],
+                    ["Float Shares", f"{(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares"],
+                    ["EPS (TTM)", f"${ticker.info.get('trailingEps', 'N/A')}"],
+                    ["Forward EPS", f"${ticker.info.get('forwardEps', 'N/A')}"],
+                    ["P/E Ratio (TTM)", f"{ticker.info.get('trailingPE', 'N/A'):.2f}"],
+                    ["Forward P/E", f"{ticker.info.get('forwardPE', 'N/A'):.2f}"],
+                    ["Price-to-Book Ratio", f"{ticker.info.get('priceToBook', 'N/A'):.2f}"]
+                ]
+                
+                table = Table(metrics_data)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 14),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 12),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ]))
+                
+                elements.append(table)
+                elements.append(Spacer(1, 20))
 
-                # PDF Export Function
-                def create_stock_report_pdf():
-                    buffer = io.BytesIO()
-                    doc = SimpleDocTemplate(buffer, pagesize=letter)
-                    elements = []
-                    
-                    styles = getSampleStyleSheet()
-                    title_style = ParagraphStyle(
-                        'CustomTitle',
-                        parent=styles['Heading1'],
-                        fontSize=24,
-                        spaceAfter=30
-                    )
-                    elements.append(Paragraph(f"Stock Analysis Report - {stock}", title_style))
-                    elements.append(Spacer(1, 12))
-                    
-                    elements.append(Paragraph("Key Metrics", styles['Heading2']))
-                    metrics_data = [
+                # Add AI Predictions section if available
+                if 'final_pred_price' in locals():
+                    elements.append(Paragraph("AI Predictions", styles['Heading2']))
+                    predictions_data = [
                         ["Metric", "Value"],
-                        ["Stock Name", info.get('longName', stock)],
-                        ["Stock Code", stock],
-                        ["Current Price", f"${ticker.info.get('currentPrice', 'N/A')} USD"],
-                        ["Previous Close", f"${ticker.info.get('previousClose', 'N/A')} USD"],
-                        ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
-                        ["52-Week High", f"${ticker.info.get('fiftyTwoWeekHigh', 'N/A')} USD"],
-                        ["52-Week Low", f"${ticker.info.get('fiftyTwoWeekLow', 'N/A')} USD"],
-                        ["Open Price", f"${ticker.info.get('open', 'N/A')} USD"],
-                        ["Day High", f"${ticker.info.get('dayHigh', 'N/A')} USD"],
-                        ["Day Low", f"${ticker.info.get('dayLow', 'N/A')} USD"],
-                        ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
-                        ["Trading Value", f"${(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion USD"],
-                        ["Market Cap", f"${(ticker.info.get('marketCap', 0) / 1e9):.2f} billion USD"],
-                        ["Shares Outstanding", f"{(ticker.info.get('sharesOutstanding', 0) / 1e9):.2f} billion shares"],
-                        ["Float Shares", f"{(ticker.info.get('floatShares', 0) / 1e9):.2f} billion shares"],
-                        ["EPS (TTM)", f"${ticker.info.get('trailingEps', 'N/A')}"],
-                        ["Forward EPS", f"${ticker.info.get('forwardEps', 'N/A')}"],
-                        ["P/E Ratio (TTM)", f"{ticker.info.get('trailingPE', 'N/A'):.2f}"],
-                        ["Forward P/E", f"{ticker.info.get('forwardPE', 'N/A'):.2f}"],
-                        ["Price-to-Book Ratio", f"{ticker.info.get('priceToBook', 'N/A'):.2f}"]
+                        ["Current Price", f"${current_price:.2f}"],
+                        ["Predicted Price (6m)", f"${final_pred_price:.2f}"],
+                        ["Expected Change", f"{price_change:.1f}%"],
+                        ["Historical Volatility", f"{volatility*100:.1f}%"]
                     ]
                     
-                    table = Table(metrics_data)
-                    table.setStyle(TableStyle([
+                    pred_table = Table(predictions_data)
+                    pred_table.setStyle(TableStyle([
                         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -449,26 +494,33 @@ if stock:
                         ('FONTSIZE', (0, 1), (-1, -1), 12),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black)
                     ]))
-                    
-                    elements.append(table)
-                    doc.build(elements)
-                    buffer.seek(0)
-                    return buffer
+                    elements.append(pred_table)
 
-                # Add download button
-                st.markdown('<h2 class="stSubheader">Export Report</h2>', unsafe_allow_html=True)
-                pdf_buffer = create_stock_report_pdf()
-                st.download_button(
-                    label="Download PDF Report",
-                    data=pdf_buffer,
-                    file_name=f"{stock}_analysis_report.pdf",
-                    mime="application/pdf",
-                    key='download_button',
-                    help="Download a detailed PDF report of the stock analysis"
-                )
+                # Add report generation timestamp
+                elements.append(Spacer(1, 30))
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                elements.append(Paragraph(f"Report generated on: {timestamp}", styles['Normal']))
+                
+                doc.build(elements)
+                buffer.seek(0)
+                return buffer
+
+            # Add download button
+            st.markdown('<h2 class="stSubheader">Export Report</h2>', unsafe_allow_html=True)
+            pdf_buffer = create_stock_report_pdf()
+            st.download_button(
+                label="Download PDF Report",
+                data=pdf_buffer,
+                file_name=f"{stock}_analysis_report.pdf",
+                mime="application/pdf",
+                key='download_button',
+                help="Download a detailed PDF report of the stock analysis"
+            )
 
     except Exception as e:
         st.error(f"Error processing data for {stock}: {str(e)}")
+else:
+    st.info("Please enter a stock symbol to begin analysis.")
 
 # Detailed Information Section of Company
 st.title("📈 Detailed Information of Company")
