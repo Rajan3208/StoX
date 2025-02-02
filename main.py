@@ -106,13 +106,13 @@ if stock:
                     prev_close = info.get('previousClose')
                     if current_price and prev_close:
                         price_change = ((current_price - prev_close) / prev_close * 100)
-                        st.metric("Current Price", f"${current_price:,.2f}", f"{price_change:.2f}%")
+                        st.metric("Current Price", f"{current_price:,.2f}", f"{price_change:.2f}%")
                     else:
                         st.metric("Current Price", "N/A", "N/A")  
                 with metrics_col2:
                     market_cap = info.get('marketCap')
                     if market_cap:
-                        st.metric("Market Cap", f"${(market_cap / 1e9):,.2f}B", None)
+                        st.metric("Market Cap", f"{(market_cap / 1e9):,.2f}B", None)
                     else:
                         st.metric("Market Cap", "N/A", None)
                 with metrics_col3:
