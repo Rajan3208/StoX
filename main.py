@@ -35,7 +35,7 @@ def search_company(query):
     except Exception as e:
         st.error(f"Error searching for company: {str(e)}")
         return []
-st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
+st.set_page_config(layout="wide", page_title="Razzle - AI Stock Analysis")
 st.markdown("""
     <style>
     .stApp {
@@ -63,7 +63,7 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="stTitle">Razzle</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 with st.container():
     col1, col2, col3 = st.columns([2,6,2])
@@ -365,14 +365,14 @@ if stock:
                     ["Metric", "Value"],
                     ["Stock Name", info.get('longName', stock)],
                     ["Stock Code", stock],
-                    ["Current Price", f"{ticker.info.get('currentPrice', 'N/A')}"],
-                    ["Previous Close", f"{ticker.info.get('previousClose', 'N/A')}"],
+                    ["Current Price", f"{ticker.info.get('currentPrice', 'N/A')} "],
+                    ["Previous Close", f"{ticker.info.get('previousClose', 'N/A')} "],
                     ["Quote Change", f"{((ticker.info.get('currentPrice', 0) - ticker.info.get('previousClose', 0)) / ticker.info.get('previousClose', 1) * 100):.2f}%"],
                     ["52-Week High", f"{ticker.info.get('fiftyTwoWeekHigh', 'N/A')} "],
                     ["52-Week Low", f"{ticker.info.get('fiftyTwoWeekLow', 'N/A')} "],
-                    ["Open Price", f"{ticker.info.get('open', 'N/A')} "],
-                    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} "],
-                    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} "],
+                    ["Open Price", f"{ticker.info.get('open', 'N/A')} USD"],
+                    ["Day High", f"{ticker.info.get('dayHigh', 'N/A')} USD"],
+                    ["Day Low", f"{ticker.info.get('dayLow', 'N/A')} USD"],
                     ["Trading Volume", f"{ticker.info.get('volume', 'N/A'):,} shares"],
                     ["Trading Value", f"{(ticker.info.get('volume', 0) * ticker.info.get('currentPrice', 0) / 1e9):.2f} billion "],
                     ["Market Cap", f"{(ticker.info.get('marketCap', 0) / 1e9):.2f} billion "],
@@ -405,8 +405,8 @@ if stock:
                     elements.append(Paragraph("AI Predictions", styles['Heading2']))
                     predictions_data = [
                         ["Metric", "Value"],
-                        ["Current Price", f"${current_price:.2f}"],
-                        ["Predicted Price (6m)", f"${final_pred_price:.2f}"],
+                        ["Current Price", f"{current_price:.2f}"],
+                        ["Predicted Price (6m)", f"{final_pred_price:.2f}"],
                         ["Expected Change", f"{price_change:.1f}%"],
                         ["Historical Volatility", f"{volatility*100:.1f}%"]
                     ]
