@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import yfinance as 
+import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
