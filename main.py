@@ -35,7 +35,7 @@ def search_company(query):
     except Exception as e:
         st.error(f"Error searching for company: {str(e)}")
         return []
-st.set_page_config(layout="wide", page_title="Razzle - AI Stock Analysis")
+st.set_page_config(layout="wide", page_title="StoX - AI Stock Analysis")
 st.markdown("""
     <style>
     .stApp {
@@ -63,7 +63,7 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-st.markdown('<h1 class="stTitle">Razzle</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="stTitle">StoX</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.5rem; color: #666;">AI-based Stock Analysis & Prediction</p>', unsafe_allow_html=True)
 with st.container():
     col1, col2, col3 = st.columns([2,6,2])
@@ -169,10 +169,21 @@ if stock:
             df_period = ticker.history(start=period_start, end=end_date)
             if not df_period.empty:
                 fig = make_subplots(
-                    rows=2, cols=1,
-                    row_heights=[0.7, 0.3],
+                    rows=3, cols=1,
+                    row_heights=[0.3, 0.4, 0.3], 
                     vertical_spacing=0.05,
-                    subplot_titles=(f'{selected_period} Price Analysis', 'Volume')
+                    subplot_titles=(f'{selected_period} Mountain View', f'{selected_period} Price Analysis', 'Volume')
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=df_period.index,
+                        y=df_period['Close'],
+                        fill='tonexty',
+                        name='Mountain View',
+                        line=dict(color='rgb(0, 128, 96)'),
+                        fillcolor='rgba(0, 128, 96, 0.3)'
+                    ),
+                    row=1, col=1
                 )
                 fig.add_trace(
                     go.Candlestick(
@@ -183,7 +194,7 @@ if stock:
                         close=df_period['Close'],
                         name='OHLC'
                     ),
-                    row=1, col=1
+                    row=2, col=1
                 )
                 if period_days >= 100:
                     ma100 = df_period['Close'].rolling(window=100).mean()
@@ -194,8 +205,9 @@ if stock:
                             name='100MA',
                             line=dict(color='red', width=1)
                         ),
-                        row=1, col=1
+                        row=2, col=1
                     )
+                # volume bars
                 fig.add_trace(
                     go.Bar(
                         x=df_period.index,
@@ -203,17 +215,20 @@ if stock:
                         name='Volume',
                         marker=dict(color='rgba(0, 0, 255, 0.5)')
                     ),
-                    row=2, col=1
+                    row=3, col=1
                 )
                 fig.update_layout(
                     title=f'{stock} Stock Analysis - {selected_period}',
                     yaxis_title='Stock Price (USD)',
-                    yaxis2_title='Volume',
+                    yaxis2_title='Stock Price (USD)',
+                    yaxis3_title='Volume',
                     xaxis_rangeslider_visible=False,
                     template='plotly_white',
-                    height=800,
+                    height=1000,  
                     showlegend=True
                 )
+                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128, 128, 128, 0.2)')
+                
                 st.plotly_chart(fig, use_container_width=True)
                 
             # AI Predictions Section
@@ -223,9 +238,7 @@ if stock:
                 try:
                     # Prepare data for predictions
                     scaler = MinMaxScaler(feature_range=(0, 1))
-                    scaled_data = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
-                    
-                    # Create sequences for prediction
+                    scaled_data = scaler.fit_transform(df['Close'].values.reshape(-1, 1)) 
                     x_test = []
                     for i in range(100, len(scaled_data)):
                         x_test.append(scaled_data[i-100:i, 0])
@@ -458,7 +471,7 @@ with navigation[0]:
     else:
         query = "Apple"  
     query = st.text_input("Enter stock/company name:", value=query)
-    API_KEY = "84f6a80ac55c464c930ce84304485380"  # Replace with your actual API key
+    API_KEY = "84f6a80ac55c464c930ce84304485380"  
     NEWS_API_URL = "https://newsapi.org/v2/everything"
     def fetch_stock_news(query, api_key):
         """Fetch stock-related news from NewsAPI."""
@@ -507,7 +520,7 @@ with navigation[1]:
             "State": info.get('state', 'N/A'),
             "City": info.get('city', 'N/A'),
         } 
-        # Display company details in two columns
+        # Company details in two columns
         col1, col2 = st.columns(2)
         for i, (key, value) in enumerate(company_details.items()):
             if i % 2 == 0:
@@ -522,7 +535,7 @@ with navigation[1]:
             "Operating Margins": f"{info.get('operatingMargins', 'N/A')*100:.2f}%" if info.get('operatingMargins') else 'N/A',
             "Profit Margins": f"{info.get('profitMargins', 'N/A')*100:.2f}%" if info.get('profitMargins') else 'N/A',
         }
-        # Display financial metrics in two columns
+        # Financial metrics in two columns
         col1, col2 = st.columns(2)
         for i, (key, value) in enumerate(financial_metrics.items()):
             if i % 2 == 0:
