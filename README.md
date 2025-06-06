@@ -17,7 +17,7 @@ StoX is a Jupyter Notebook project that aims to analyze stock market data and pr
 - Matplotlib
 - NumPy
 - Streamlit
-- Yahoo Finance Library
+- Yahoo Finance
 - NewsAPI
 
 ## Prerequisites
